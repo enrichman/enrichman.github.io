@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+      $(function() {
+        $.get("https://enrichman.github.io/covid19/world/data.json", function(response) {
+          response.countries.sort((a, b) => {
+            if (a.id > b.id) return 1;
+            return -1;
+          });
+          response.countries.forEach(function(country) {
+            $("#select-countries").append(new Option(country.name, country.id));
+          });
+
+          google.charts.load('current', {'packages':['corechart']});
+          google.charts.setOnLoadCallback(drawChart);
+        });
+
+        $("#select-countries").change((e) => {
+          var selectedCountry = $(e.currentTarget).find("option:selected").val();
+          var selectedCountryName = $(e.currentTarget).find("option:selected").text();
+          drawChart(selectedCountry, selectedCountryName);
+        });
+      });
+
+      function drawChart(country, countryName) {
+        var url = "https://enrichman.github.io/covid19/world/data.json";
+        if (country == undefined || country == 'world') {
+          countryName = 'World'
+        } else {
+          url = "https://enrichman.github.io/covid19/world/"+country+"/data.json";
+        }
+
+        $.get(url, function(response) {
+          var ts = [["Time", "Death", "Confirmed", "Recovered"]];
+          response.ts.forEach(element => {
+            if ((element.d + element.c + element.r) > 0) {
+              ts.push([new Date(element.t*1000), element.d, element.c, element.r]);
+            }
+          });
+
+
+          var data = google.visualization.arrayToDataTable(ts);
+
+          var options = {
+            title: countryName,
+            legend: { position: 'bottom' },
+            colors:['red', 'orange', 'green']
+          };
+
+          var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+          chart.draw(data, options);
+        });
+      }
+
+    </script>
+  </head>
+  <body>
+
+    <select id="select-countries" style="margin: 20px 0 0 150px;"> 
+      <option value="world"> - Global</option>
+    </select>
+    <div id="curve_chart" style="width: 900px; height: 500px"></div>
+  </body>
+</html>
